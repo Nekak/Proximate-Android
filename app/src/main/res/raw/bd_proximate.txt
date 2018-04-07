@@ -1,0 +1,8 @@
+CREATE TABLE user (userId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                     name TEXT,
+                     age INTEGER,
+                     job TEXT,
+                     introduction TEXT,
+                     pathPicture TEXT,
+                     latitude FLOAT,
+                     longitude FLOAT);

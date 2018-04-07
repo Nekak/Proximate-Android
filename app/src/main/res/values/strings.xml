@@ -1,0 +1,13 @@
+<resources>
+    <string name="app_name">ProximateTestAndroid</string>
+
+    <string name="logo_text">Un logo bien chido</string>
+
+    <string name="email_text">Correo electrónico</string>
+    <string name="password_text">Contraseña</string>
+    <string name="login_text">Conectar</string>
+
+    <string name="close_text">Cerrar sesión</string>
+
+    <string name="image_text">Para tomar una fotografía toque el botón de cámara.</string>
+</resources>

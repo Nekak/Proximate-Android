@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:descendantFocusability="beforeDescendants"
+    android:focusableInTouchMode="true"
+    tools:context="com.neklien.proximatetestandroid.activities.LoginActivity">
+
+    <ProgressBar
+        android:id="@+id/pb_al"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:max="100"
+        android:backgroundTint="@android:color/white"
+        android:indeterminateTint="#1a09d6"
+        android:layout_marginTop="-7dp"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        android:visibility="invisible"/>
+
+    <TextView
+        android:id="@+id/tv_logo_al"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_marginTop="15dp"
+        android:background="@android:color/black"
+        android:gravity="center"
+        android:text="@string/logo_text"
+        android:textColor="@android:color/white"
+        android:textStyle="bold"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="parent" />
+
+    <EditText
+        android:id="@+id/et_email_al"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="30dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginStart="20dp"
+        android:hint="@string/email_text"
+        android:imeOptions="actionNext"
+        android:inputType="textEmailAddress"
+        android:nextFocusForward="@id/et_password_al"
+        android:text="prueba@proximateapps.com"
+        app:layout_constraintBottom_toTopOf="@id/et_password_al"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <EditText
+        android:id="@+id/et_password_al"
+        android:layout_width="0dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="60dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginStart="20dp"
+        android:hint="@string/password_text"
+        android:imeOptions="actionDone"
+        android:inputType="textPassword"
+        android:text="12digo16digo18#$"
+        app:layout_constraintBottom_toTopOf="@id/btn_al"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+    <Button
+        android:id="@+id/btn_al"
+        android:layout_width="wrap_content"
+        android:layout_height="50dp"
+        android:layout_marginBottom="40dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginStart="20dp"
+        android:onClick="sendLogin"
+        android:text="@string/login_text"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</android.support.constraint.ConstraintLayout>

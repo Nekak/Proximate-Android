@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context="com.neklien.proximatetestandroid.activities.ProfileActivity">
+
+    <ProgressBar
+        android:id="@+id/pb_ap"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="-7dp"
+        android:backgroundTint="@android:color/white"
+        android:indeterminate="true"
+        android:indeterminateTint="#1a09d6"
+        android:max="100"
+        android:visibility="invisible"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <ImageButton
+        android:id="@+id/ib_ap"
+        android:layout_width="150dp"
+        android:layout_height="150dp"
+        android:layout_marginTop="15dp"
+        android:background="@android:color/transparent"
+        android:onClick="takePhoto"
+        android:scaleType="fitCenter"
+        android:src="@drawable/camera"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <TextView
+        android:id="@+id/tv_ap"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="20dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        android:gravity="center"
+        android:text="@string/image_text"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/ib_ap" />
+
+    <ScrollView
+        android:id="@+id/sv_ap"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:layout_marginEnd="20dp"
+        android:layout_marginStart="20dp"
+        android:layout_marginTop="20dp"
+        app:layout_constraintBottom_toTopOf="@id/btn_ap"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@id/tv_ap">
+
+        <TextView
+            android:id="@+id/tv_profile_ap"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Un texto bien chingón." />
+    </ScrollView>
+
+    <Button
+        android:id="@+id/btn_ap"
+        android:layout_width="150dp"
+        android:layout_height="50dp"
+        android:layout_marginBottom="15dp"
+        android:onClick="closeSession"
+        android:text="@string/close_text"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent" />
+
+</android.support.constraint.ConstraintLayout>
