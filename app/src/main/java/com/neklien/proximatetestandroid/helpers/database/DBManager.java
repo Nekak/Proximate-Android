@@ -23,6 +23,8 @@ public class DBManager extends SQLiteOpenHelper {
     private Context context;
 
     public static final String userTable = "user";
+    public static final String sectionTable = "section";
+    public static final String userSectionTable = "user_section";
 
     public DBManager(Context context) {
         super(context, DATABASE_NAME, null, DATABASE_VERSION);

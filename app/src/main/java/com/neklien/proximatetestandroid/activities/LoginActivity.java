@@ -4,9 +4,9 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.util.Patterns;
 import android.view.View;
 import android.view.WindowManager;
@@ -36,6 +36,8 @@ public class LoginActivity extends AppCompatActivity {
 
     private Boolean isAttached = false;
 
+    private String token;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -45,6 +47,8 @@ public class LoginActivity extends AppCompatActivity {
         etPassword = findViewById(R.id.et_password_al);
 
         progressBar = findViewById(R.id.pb_al);
+
+        token = "";
     }
 
     @Override
@@ -90,7 +94,7 @@ public class LoginActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        if(alertDialog != null && alertDialog.isShowing()){
+        if (alertDialog != null && alertDialog.isShowing()) {
             alertDialog.dismiss();
         }
     }
@@ -123,10 +127,11 @@ public class LoginActivity extends AppCompatActivity {
             public void onResponse(Call<ServerResponse> call, Response<ServerResponse> response) {
                 hideActivityIndicator();
 
-                if (response.isSuccessful()) {
-                    showAlertMessage(response.body().getMessage());
+                if (response.isSuccessful() && response.body() != null) {
+                    token = response.body().getToken();
+                    showAlertMessage(response.body().getMessage(), response.body().getSuccess());
                 } else {
-                    showAlertMessage(response.message());
+                    showAlertMessage(response.message(), false);
                 }
             }
 
@@ -134,7 +139,7 @@ public class LoginActivity extends AppCompatActivity {
             public void onFailure(Call<ServerResponse> call, Throwable t) {
                 if (!call.isCanceled()) {
                     hideActivityIndicator();
-                    showAlertMessage("Ocurrió un error, por favor reintente más tarde.");
+                    showAlertMessage("Ocurrió un error, por favor reintente más tarde.", false);
                 }
             }
         });
@@ -151,7 +156,7 @@ public class LoginActivity extends AppCompatActivity {
         getWindow().clearFlags(WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE);
     }
 
-    private void showAlertMessage(String message) {
+    private void showAlertMessage(String message, final Boolean isSuccess) {
         if (alertDialog == null) {
             AlertDialog.Builder builderDialog = new AlertDialog.Builder(this)
                     .setTitle("Aviso")
@@ -160,25 +165,27 @@ public class LoginActivity extends AppCompatActivity {
                     .setPositiveButton("Continuar", new DialogInterface.OnClickListener() {
                         @Override
                         public void onClick(DialogInterface dialogInterface, int i) {
-                            SharedPreferences.Editor editor = (getSharedPreferences("Preferences", Context.MODE_PRIVATE)).edit();
+                            if (isSuccess) {
+                                SharedPreferences.Editor editor = (getSharedPreferences("Preferences", Context.MODE_PRIVATE)).edit();
 
-                            editor.putString("email_preferences", etEmail.getText().toString());
-                            editor.putString("password_preferences", etPassword.getText().toString());
-                            editor.putString("token_preferences", "aToken");
+                                editor.putString("email_preferences", etEmail.getText().toString());
+                                editor.putString("password_preferences", etPassword.getText().toString());
+                                editor.putString("token_preferences", token);
 
-                            editor.apply();
+                                editor.apply();
 
-                            Intent intent = new Intent(LoginActivity.this, ProfileActivity.class);
+                                Intent intent = new Intent(LoginActivity.this, ProfileActivity.class);
 
-                            intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-                            startActivity(intent);
-                            finish();
+                                startActivity(intent);
+                                finish();
+                            }
                         }
                     });
 
-            if(isAttached) {
+            if (isAttached) {
                 alertDialog = builderDialog.show();
             }
         }

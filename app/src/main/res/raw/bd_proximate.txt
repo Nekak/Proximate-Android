@@ -1,8 +1,24 @@
-CREATE TABLE user (userId INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
-                     name TEXT,
-                     age INTEGER,
-                     job TEXT,
-                     introduction TEXT,
-                     pathPicture TEXT,
+CREATE TABLE user (id_user INTEGER NOT NULL PRIMARY KEY,
+                     names TEXT,
+                     lastnames TEXT,
+                     email TEXT,
+                     document_number TEXT,
+                     lastLogin TEXT,
+                     deleted INTEGER,
+                     idDocuments INTEGER,
+                     documents_abb TEXT,
+                     documents_label TEXT,
+                     user_status_label TEXT,
+                     path_picture TEXT,
                      latitude FLOAT,
                      longitude FLOAT);
+
+CREATE TABLE section (id_section INTEGER NOT NULL PRIMARY KEY,
+                     section_name TEXT,
+                     abbrev TEXT);
+
+CREATE TABLE user_section (id_user_section INTEGER NOT NULL PRIMARY KEY,
+                     id_user INTEGER NOT NULL,
+                     id_section INTEGER NOT NULL,
+                     FOREIGN KEY (id_user) REFERENCES user,
+                     FOREIGN KEY (id_section) REFERENCES section);

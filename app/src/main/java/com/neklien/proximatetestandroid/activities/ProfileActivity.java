@@ -15,12 +15,13 @@ import android.location.Address;
 import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
 import android.text.SpannableStringBuilder;
 import android.text.Spanned;
 import android.text.style.ForegroundColorSpan;
@@ -31,8 +32,6 @@ import android.view.WindowManager;
 import android.widget.ImageButton;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-
-import android.support.v7.app.AlertDialog;
 import android.widget.Toast;
 
 import com.google.android.gms.location.FusedLocationProviderClient;
@@ -49,11 +48,20 @@ import com.neklien.proximatetestandroid.helpers.GenericFileProvider;
 import com.neklien.proximatetestandroid.helpers.database.DBElement;
 import com.neklien.proximatetestandroid.helpers.database.DBQueryManager;
 import com.neklien.proximatetestandroid.helpers.database.DBQueryManagerListener;
+import com.neklien.proximatetestandroid.helpers.database.Section;
 import com.neklien.proximatetestandroid.helpers.database.User;
+import com.neklien.proximatetestandroid.helpers.database.UserSection;
 import com.neklien.proximatetestandroid.helpers.retrofit.RestApi;
 import com.neklien.proximatetestandroid.helpers.retrofit.ServerResponse;
 
 import java.io.File;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.TemporalAccessor;
+import java.util.Date;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -152,7 +160,11 @@ public class ProfileActivity extends AppCompatActivity {
 
         final RestApi restApi = ((AppDelegate) getApplication()).getRestApi();
 
-        call = restApi.getProfile();
+        SharedPreferences sharedPref = getSharedPreferences("Preferences", Context.MODE_PRIVATE);
+
+        String token = sharedPref.getString("token_preferences", "");
+
+        call = restApi.getProfile(token);
 
         call.enqueue(new Callback<ServerResponse>() {
             @Override
@@ -160,29 +172,25 @@ public class ProfileActivity extends AppCompatActivity {
                 hideActivityIndicator();
 
                 if (response.isSuccessful()) {
-                    showAlertMessage(response.body().getMessage());
+                    if (response.body().getError()) {
+                        showAlertMessage(response.body().getMessage());
+                    } else {
+                        if (response.body().getArrUsers().size() > 0) {
+                            final User auxUser = response.body().getArrUsers().get(0);
+
+                            DBQueryManager.saveUser(ProfileActivity.this, auxUser, new DBQueryManagerListener() {
+                                @Override
+                                public void onQueryResult(long resultCode, DBElement dbElement) {
+                                    saveSections(auxUser);
+                                }
+                            });
+                        } else {
+                            showAlertMessage("No se encontró información para este usuario.");
+                        }
+                    }
                 } else {
                     showAlertMessage(response.message());
                 }
-
-                User usr = new User();
-
-                usr.setName("Ramses Rodríguez");
-                usr.setAge(28);
-                usr.setJob("Desarrollador de aplicaciones móviles");
-                usr.setIntroduction("Haciendo la otra aplicación para Proximate, ahora en Android.");
-
-                DBQueryManager.saveUser(ProfileActivity.this, usr, new DBQueryManagerListener() {
-                    @Override
-                    public void onQueryResult(long resultCode, DBElement dbElement) {
-                        user = DBQueryManager.getUser();
-                        if (user != null) {
-                            showUserData();
-                        } else {
-                            Toast.makeText(ProfileActivity.this, "Ocurrió un error al obtener el usuario.", Toast.LENGTH_LONG).show();
-                        }
-                    }
-                });
             }
 
             @Override
@@ -195,6 +203,42 @@ public class ProfileActivity extends AppCompatActivity {
         });
     }
 
+    private void saveSections(final User auxUser) {
+        for (final Section s : auxUser.getArrSections()) {
+            DBQueryManager.saveSection(this, s, new DBQueryManagerListener() {
+                @Override
+                public void onQueryResult(long resultCode, DBElement dbElement) {
+                    long idUS = DBQueryManager.findIdForUserSection(auxUser.getIdUser(), s.getIdSection());
+
+                    if (idUS == -1) {
+                        idUS = DBQueryManager.getLastUserSectionIndex() + 1;
+                    }
+
+                    UserSection userSection = new UserSection();
+
+                    userSection.setIdUserSection(idUS);
+                    userSection.setIdUser(auxUser.getIdUser());
+                    userSection.setIdSection(s.getIdSection());
+
+                    DBQueryManager.saveUserSection(ProfileActivity.this, userSection, new DBQueryManagerListener() {
+                        @Override
+                        public void onQueryResult(long resultCode, DBElement dbElement) {
+
+                        }
+                    });
+                }
+            });
+        }
+
+        user = DBQueryManager.getUser();
+
+        if (user != null) {
+            showUserData();
+        } else {
+            Toast.makeText(ProfileActivity.this, "Ocurrió un error al obtener el usuario.", Toast.LENGTH_LONG).show();
+        }
+    }
+
     private void showUserData() {
         if (!user.getPathPicture().equals("")) {
             showImage();
@@ -204,7 +248,7 @@ public class ProfileActivity extends AppCompatActivity {
 
         SpannableStringBuilder stringFinal = new SpannableStringBuilder();
 
-        SpannableStringBuilder stringName = new SpannableStringBuilder(user.getName());
+        SpannableStringBuilder stringName = new SpannableStringBuilder(user.getNames() + " " + user.getLastnames());
 
         stringName.setSpan(new RelativeSizeSpan(2f), 0, stringName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
         stringName.setSpan(new StyleSpan(Typeface.BOLD), 0, stringName.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
@@ -212,28 +256,67 @@ public class ProfileActivity extends AppCompatActivity {
 
         stringFinal.append(stringName);
 
-        SpannableStringBuilder stringAge = new SpannableStringBuilder(String.valueOf(user.getAge()));
+        SpannableStringBuilder stringEmail = new SpannableStringBuilder(String.valueOf(user.getEmail()));
 
-        stringAge.setSpan(new RelativeSizeSpan(0.85f), 0, stringAge.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-        stringAge.setSpan(new StyleSpan(Typeface.ITALIC), 0, stringAge.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-        stringAge.append("\n\n");
+        stringEmail.setSpan(new RelativeSizeSpan(0.85f), 0, stringEmail.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        stringEmail.setSpan(new StyleSpan(Typeface.ITALIC), 0, stringEmail.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        stringEmail.append("\n\n");
 
-        stringFinal.append(stringAge);
+        stringFinal.append(stringEmail);
 
-        SpannableStringBuilder stringJob = new SpannableStringBuilder(user.getJob());
+        /*
+        * let formatter = DateFormatter()
+            formatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ss.SSSZ"
 
-        stringJob.setSpan(new RelativeSizeSpan(0.9f), 0, stringJob.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
-        stringJob.setSpan(new ForegroundColorSpan(Color.GRAY), 0, stringJob.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+            if let dateLL = formatter.date(from: userData!.lastLogin){
+                let formatterLL = DateFormatter()
+                formatterLL.dateFormat = "dd-MM-yyyy 'a las' HH:mm:ss"
+                formatterLL.timeZone = NSTimeZone(name: "UTC")! as TimeZone
+                let dateStr = formatterLL.string(from: dateLL)
+                */
 
-        stringJob.append("\n\n");
+        String strLL = "";
 
-        stringFinal.append(stringJob);
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'").withZone(ZoneOffset.UTC);
+            TemporalAccessor date = fmt.parse(user.getLastLogin());
+            Instant time = Instant.from(date);
 
-        SpannableStringBuilder stringInt = new SpannableStringBuilder(user.getIntroduction());
+            DateTimeFormatter fmtOut = DateTimeFormatter.ofPattern("dd-MM-yyyy 'a las' HH:mm:ss").withZone(ZoneOffset.UTC);
+            strLL = fmtOut.format(time);
+        } else {
+            SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSS'Z'");
 
-        stringInt.setSpan(new RelativeSizeSpan(0.8f), 0, stringInt.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+            try {
+                Date date = fmt.parse(user.getLastLogin());
 
-        stringFinal.append(stringInt);
+                SimpleDateFormat fmtOut = new SimpleDateFormat("dd-MM-yyyy 'a las' HH:mm:ss");
+                strLL = fmtOut.format(date);
+            } catch (ParseException e) {
+                e.printStackTrace();
+            }
+        }
+
+        SpannableStringBuilder stringLL = new SpannableStringBuilder("Última inicio de sesión: " + strLL);
+
+        stringLL.setSpan(new RelativeSizeSpan(0.9f), 0, stringLL.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+        stringLL.setSpan(new ForegroundColorSpan(Color.GRAY), 0, stringLL.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+
+        stringLL.append("\n\n");
+
+        stringFinal.append(stringLL);
+
+        SpannableStringBuilder stringSections = new SpannableStringBuilder("Secciones:\n\n");
+
+        stringSections.setSpan(new RelativeSizeSpan(0.8f), 0, stringSections.length(), Spanned.SPAN_INCLUSIVE_INCLUSIVE);
+
+        stringFinal.append(stringSections);
+
+        for (Section s : user.getArrSections()) {
+            stringFinal.append(s.getSectionName());
+            stringFinal.append("\n\n");
+        }
+
         tvProfile.setText(stringFinal);
     }
 
@@ -482,8 +565,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     public void closeSession(View view) {
-        if (alertDialog == null) {
-
+        if (alertDialog == null || (alertDialog != null && !alertDialog.isShowing())) {
             AlertDialog.Builder builderDialog = new AlertDialog.Builder(this)
                     .setTitle("Aviso")
                     .setMessage("¿Cerrar sesión?")
@@ -510,13 +592,23 @@ public class ProfileActivity extends AppCompatActivity {
                             DBQueryManager.deleteUser(new DBQueryManagerListener() {
                                 @Override
                                 public void onQueryResult(long resultCode, DBElement dbElement) {
-                                    Intent intent = new Intent(ProfileActivity.this, FirstActivity.class);
+                                    DBQueryManager.deleteSection(new DBQueryManagerListener() {
+                                        @Override
+                                        public void onQueryResult(long resultCode, DBElement dbElement) {
+                                            DBQueryManager.deleteUserSection(new DBQueryManagerListener() {
+                                                @Override
+                                                public void onQueryResult(long resultCode, DBElement dbElement) {
+                                                    Intent intent = new Intent(ProfileActivity.this, FirstActivity.class);
 
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
-                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK);
+                                                    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-                                    startActivity(intent);
-                                    finish();
+                                                    startActivity(intent);
+                                                    finish();
+                                                }
+                                            });
+                                        }
+                                    });
                                 }
                             });
 
@@ -532,8 +624,11 @@ public class ProfileActivity extends AppCompatActivity {
                             }
 
                             File[] files = path.listFiles();
-                            for (File f : files) {
-                                f.delete();
+
+                            if (files != null) {
+                                for (File f : files) {
+                                    f.delete();
+                                }
                             }
                         }
                     });
@@ -556,7 +651,7 @@ public class ProfileActivity extends AppCompatActivity {
     }
 
     private void showAlertMessage(String message) {
-        if (alertDialog == null) {
+        if (alertDialog == null || (alertDialog != null && !alertDialog.isShowing())) {
             AlertDialog.Builder builderDialog = new AlertDialog.Builder(this)
                     .setTitle("Aviso")
                     .setMessage(message)
